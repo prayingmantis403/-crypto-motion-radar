@@ -122,6 +122,39 @@ async function searchCoins(){
  }catch(e){document.getElementById('status').textContent='Live data could not be loaded. Try again in a moment.'}
 }
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')searchCoins()});
+async function initialScan(){
+
+  const coins=['BTC','ETH','SOL','XRP','DOGE','ADA'];
+
+  document.getElementById('status').textContent='Loading live DEX data…';
+
+  let all=[];
+
+  for(const coin of coins){
+
+    try{
+
+      const res=await fetch('https://api.dexscreener.com/latest/dex/search?q='+coin);
+
+      if(!res.ok)continue;
+
+      const data=await res.json();
+
+      all.push(...(data.pairs||[]).filter(p=>p.baseToken&&p.liquidity).slice(0,10));
+
+    }catch(e){}
+
+  }
+
+  rows=all;
+
+  document.getElementById('status').textContent=`Loaded ${rows.length} live DEX pairs.`;
+
+  render();
+
+}
+
+initialScan();
 </script>
 </body>
 </html>

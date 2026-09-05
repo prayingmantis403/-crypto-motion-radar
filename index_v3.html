@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Crypto Motion Radar V3</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b1020,#111827);min-height:100vh}
+header{padding:16px 14px 10px;position:sticky;top:0;background:rgba(11,16,32,.97);backdrop-filter:blur(12px);z-index:5;border-bottom:1px solid #1d2940}
+h1{font-size:22px;margin:0 0 3px}.sub{font-size:12px;color:#aab3c5}
+.controls{display:flex;gap:7px;margin-top:11px}
+.controls input{flex:1;min-width:0}
+input,button,select{border:1px solid #334155;background:#172033;color:#fff;border-radius:11px;padding:10px;font-size:13px}
+button{font-weight:800;cursor:pointer}.primary{background:#2563eb!important;border-color:#2563eb!important}
+.tabs{display:flex;gap:7px;overflow:auto;margin:9px 0 7px;-webkit-overflow-scrolling:touch}
+.tab{white-space:nowrap;flex-shrink:0}.tab.active{background:#334155}
+.filters{display:flex;gap:7px;overflow:auto;padding-bottom:2px;flex-wrap:wrap}
+.filters select, .filters button{white-space:nowrap}
+main{padding:9px 13px 90px}
+.note{font-size:11px;color:#aab3c5;background:#131c2e;padding:9px 11px;border-radius:11px;margin-bottom:10px}
+.status{font-size:11px;color:#9ca3af;margin:8px 2px}
+.card{background:#141d2e;border:1px solid #263248;border-radius:15px;padding:12px;margin:8px 0}
+.card.alert-border{border-color:#ef4444;box-shadow:0 0 0 1px #ef444455}
+.top{display:flex;justify-content:space-between;gap:9px;align-items:flex-start}
+.name{font-weight:850}.pair{font-size:10px;color:#8f9bb0;margin-top:2px}
+.badge{padding:4px 7px;border-radius:8px;font-size:10px;font-weight:850;white-space:nowrap}
+.hot{background:#12351f;color:#6ee7b7}.cool{background:#3b3210;color:#fde68a}.cold{background:#3b171d;color:#fca5a5}.neutral{background:#263248;color:#cbd5e1}
+.entry{background:#0b3b2b;color:#86efac}.hold{background:#25324a;color:#cbd5e1}.watch{background:#403610;color:#fde68a}.exit{background:#461a20;color:#fda4af}
+.risk{background:#4a2512;color:#fdba74}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.metric{background:#0e1626;padding:7px;border-radius:9px;min-width:0}.metric b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.metric span{font-size:9px;color:#8490a5}
+.pos{color:#6ee7b7}.neg{color:#fca5a5}
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.score-box{background:#0e1626;padding:8px;border-radius:9px}
+.score-box .label{font-size:9px;color:#8490a5;margin-bottom:4px}
+.score-box .row{display:flex;align-items:center;gap:8px}
+.score-box b{font-size:13px;min-width:28px}
+.bar{height:7px;background:#263248;border-radius:99px;flex:1;overflow:hidden}
+.fill-m{height:100%;background:#60a5fa}
+.fill-q{height:100%;background:#34d399}
+.signal{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;align-items:center}
+.risk-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.risk-green{background:#22c55e;box-shadow:0 0 6px #22c55e88}
+.risk-yellow{background:#eab308;box-shadow:0 0 6px #eab30888}
+.risk-red{background:#ef4444;box-shadow:0 0 6px #ef444488}
+.risk-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:8px;font-size:10px;font-weight:850}
+.risk-pill.green{background:#14532d;color:#86efac}
+.risk-pill.yellow{background:#422006;color:#fde68a}
+.risk-pill.red{background:#450a0a;color:#fca5a5}
+.details{font-size:10px;color:#8995aa;margin-top:7px;line-height:1.45}
+.reason{font-size:11px;color:#a5b4c8;margin-top:8px;line-height:1.4;background:#0e1626;padding:7px 9px;border-radius:8px}
+.actions{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.actions a, .actions button{flex:1;min-width:90px;text-align:center;text-decoration:none;color:#fff;background:#1e293b;border-radius:9px;padding:8px;font-size:11px;font-weight:750;border:1px solid #334155}
+.actions button.add{background:#0b3b2b;border-color:#166534}
+.actions button.rem{background:#461a20;border-color:#7f1d1d}
+.actions button.note-btn{background:#1e3a5f;border-color:#1e40af}
+.empty{padding:22px 8px;text-align:center;color:#8f9bb0;font-size:12px}
+.legend{font-size:10px;color:#77849a;margin-top:7px;line-height:1.5}
+footer{position:fixed;bottom:0;left:0;right:0;padding:9px 12px;background:rgba(11,16,32,.97);font-size:10px;color:#7f8ba0;text-align:center;border-top:1px solid #1d2940}
+.watch-banner{background:#172554;border:1px solid #1e40af;border-radius:11px;padding:10px 12px;margin-bottom:10px;font-size:12px}
+.watch-banner b{color:#93c5fd}
+.entry-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.entry-row input{flex:1;min-width:100px;padding:7px;font-size:12px}
+.pnl{font-size:12px;font-weight:800;margin-top:6px}
+.pnl.up{color:#6ee7b7}.pnl.down{color:#fca5a5}
+.alert-list{background:#1c1917;border:1px solid #44403c;border-radius:11px;padding:10px;margin-bottom:10px;font-size:12px}
+.alert-list div{padding:4px 0;border-bottom:1px solid #292524}
+.alert-list div:last-child{border-bottom:none}
+@media(max-width:430px){.grid{grid-template-columns:repeat(2,1fr)}.scores{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Crypto Motion Radar <span style="font-size:12px;color:#60a5fa">V3</span></h1>
+  <div class="sub">Momentum + quality • watchlist • exit alerts • risk colors</div>
+
+  <div class="controls">
+    <input id="q" placeholder="Search coin or token (e.g. SOL)" autocomplete="off">
+    <button type="button" class="primary" id="btnScan">Scan</button>
+    <button type="button" id="btnRefresh">↻</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button type="button" class="tab" data-mode="move">⚡ MOVE NOW</button>
+    <button type="button" class="tab" data-mode="fast">🔥 FAST</button>
+    <button type="button" class="tab" data-mode="steady">🐢 STEADY</button>
+    <button type="button" class="tab" data-mode="watch">👀 WATCH</button>
+    <button type="button" class="tab" data-mode="mylist">📋 MY LIST</button>
+    <button type="button" class="tab active" data-mode="all">ALL</button>
+  </div>
+
+  <div class="filters">
+    <select id="chainFilter"><option value="all">All chains</option></select>
+    <select id="liqFilter">
+      <option value="0">Any liquidity</option>
+      <option value="25000">$25K+ liq</option>
+      <option value="50000">$50K+ liq</option>
+      <option value="100000">$100K+ liq</option>
+      <option value="250000">$250K+ liq</option>
+    </select>
+    <select id="sortFilter">
+      <option value="score">Sort: Combined</option>
+      <option value="momentum">Sort: Momentum</option>
+      <option value="quality">Sort: Quality</option>
+      <option value="m5">Sort: 5 min</option>
+      <option value="h6">Sort: 6 hour</option>
+      <option value="h1">Sort: 1 hour</option>
+      <option value="vol">Sort: volume</option>
+      <option value="liq">Sort: liquidity</option>
+    </select>
+    <button type="button" id="btnNotify" title="Enable browser notifications">🔔 Alerts</button>
+  </div>
+</header>
+
+<main>
+  <div class="note">
+    Educational tool only — not financial advice. Does not place trades.
+    <b>MY LIST</b> stores pairs in this browser. Alerts work while the page is open.
+    Offline / closed-browser push needs Telegram or a server (not included).
+  </div>
+  <div id="alertBox" class="alert-list" style="display:none"></div>
+  <div id="status" class="status">Loading live market pairs…</div>
+  <div id="results"></div>
+  <div class="legend">
+    <b>Risk:</b> 🟢 Lower • 🟡 Medium • 🔴 Higher &nbsp;|&nbsp;
+    <b>ENTRY</b> setup • <b>HOLD</b> momentum • <b>WATCH</b> unclear • <b>EXIT</b> fading • <b>HIGH RISK</b> warning
+  </div>
+</main>
+
+<footer>Crypto Motion Radar V3 • educational scanner + local watchlist</footer>
+
+<script>
+(function(){
+'use strict';
+
+var STORAGE_KEY = 'cmr_v3_watchlist';
+var ALERT_KEY = 'cmr_v3_alerted';
+var mode = 'all';
+var rows = [];
+var watchlist = []; // [{id, chainId, pairAddress, symbol, name, entryPrice, notes, addedAt}]
+var lastQuery = '';
+var loading = false;
+var notifyEnabled = false;
+
+function $(id){ return document.getElementById(id); }
+
+function loadWatchlist(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    watchlist = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(watchlist)) watchlist = [];
+  }catch(e){ watchlist = []; }
+}
+
+function saveWatchlist(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist)); }catch(e){}
+}
+
+function pairId(p){
+  return (p.chainId || '') + ':' + (p.pairAddress || '');
+}
+
+function isWatched(p){
+  var id = pairId(p);
+  return watchlist.some(function(w){ return w.id === id; });
+}
+
+function addToWatchlist(p, entryPrice){
+  var id = pairId(p);
+  if(watchlist.some(function(w){ return w.id === id; })) return;
+  var base = p.baseToken || {};
+  watchlist.unshift({
+    id: id,
+    chainId: p.chainId || '',
+    pairAddress: p.pairAddress || '',
+    symbol: base.symbol || '?',
+    name: base.name || 'Unknown',
+    entryPrice: entryPrice ? n(entryPrice) : null,
+    notes: '',
+    addedAt: Date.now()
+  });
+  saveWatchlist();
+  // keep full pair data available
+  if(!rows.some(function(r){ return pairId(r) === id; })) rows.unshift(p);
+  render();
+  setStatus('Added ' + (base.symbol || 'pair') + ' to MY LIST (' + watchlist.length + ' total).');
+}
+
+function removeFromWatchlist(id){
+  watchlist = watchlist.filter(function(w){ return w.id !== id; });
+  saveWatchlist();
+  render();
+}
+
+function updateWatchMeta(id, fields){
+  watchlist.forEach(function(w){
+    if(w.id === id){
+      if(fields.entryPrice !== undefined) w.entryPrice = fields.entryPrice === '' || fields.entryPrice == null ? null : n(fields.entryPrice);
+      if(fields.notes !== undefined) w.notes = fields.notes;
+    }
+  });
+  saveWatchlist();
+}
+
+function setMode(m, el){
+  mode = m;
+  document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  if(m === 'mylist') refreshWatchlistPairs();
+  else render();
+}
+
+function n(x){
+  if(typeof x === 'number' && !isNaN(x)) return x;
+  var v = parseFloat(x);
+  return isNaN(v) ? 0 : v;
+}
+
+function money(x){
+  x = n(x);
+  if(!x) return '$0';
+  if(x >= 1e9) return '$' + (x/1e9).toFixed(2) + 'B';
+  if(x >= 1e6) return '$' + (x/1e6).toFixed(2) + 'M';
+  if(x >= 1e3) return '$' + (x/1e3).toFixed(1) + 'K';
+  return '$' + x.toFixed(0);
+}
+
+function pct(x){
+  x = n(x);
+  return (x >= 0 ? '+' : '') + x.toFixed(2) + '%';
+}
+
+function age(pair){
+  var t = n(pair.pairCreatedAt);
+  if(!t) return { text: 'Age n/a', hours: 999 };
+  var mins = Math.max(0, (Date.now() - t) / 60000);
+  var hours = mins / 60;
+  if(mins < 60) return { text: Math.floor(mins) + 'm old', hours: hours };
+  if(mins < 1440) return { text: Math.floor(mins / 60) + 'h old', hours: hours };
+  return { text: Math.floor(mins / 1440) + 'd old', hours: hours };
+}
+
+function analyze(p){
+  var pc = p.priceChange || {};
+  var c5 = n(pc.m5), c6 = n(pc.h6), c1 = n(pc.h1), c24 = n(pc.h24);
+  var vol = n(p.volume && p.volume.h24);
+  var liq = n(p.liquidity && p.liquidity.usd);
+  var txns = (p.txns && p.txns.h1) || {};
+  var buys = n(txns.buys), sells = n(txns.sells);
+  var tx = buys + sells;
+  var pressure = tx ? (buys - sells) / tx : 0;
+  var buyRatio = tx ? buys / tx : 0;
+  var ratio = liq ? vol / liq : 0;
+  var ageInfo = age(p);
+  var hours = ageInfo.hours;
+  var priceUsd = n(p.priceUsd);
+
+  var momAccel = Math.max(0, c5) * 3.5 + Math.max(0, c1) * 1.1 + Math.max(0, c6) * 0.45;
+  var momPressure = Math.min(18, Math.max(0, pressure) * 30);
+  var momActivity = Math.min(12, ratio * 4);
+  var momentum = Math.max(0, Math.min(100, 12 + momAccel + momPressure + momActivity));
+
+  var extended = (c1 > 22) || (c6 > 45) || (c5 > 10 && c1 > 15);
+  if(extended) momentum = Math.max(0, momentum - 18);
+
+  var qLiq = liq >= 500000 ? 28 : liq >= 250000 ? 22 : liq >= 100000 ? 16 : liq >= 50000 ? 10 : liq >= 25000 ? 5 : 0;
+  var qCalm = 0;
+  if(Math.abs(c5) < 2) qCalm += 10;
+  else if(Math.abs(c5) < 4) qCalm += 5;
+  if(Math.abs(c1) < 8) qCalm += 12;
+  else if(Math.abs(c1) < 15) qCalm += 6;
+  if(Math.abs(c6) < 20) qCalm += 8;
+  var qAge = hours >= 24 ? 12 : hours >= 6 ? 8 : hours >= 2 ? 4 : hours >= 0.5 ? 1 : 0;
+  var qVol = (ratio > 0.3 && ratio < 8) ? 10 : (ratio >= 8 && ratio < 15) ? 4 : 0;
+  var qBuy = (buyRatio >= 0.48 && buyRatio <= 0.65) ? 8 : (buyRatio > 0.65) ? 4 : 0;
+  var quality = Math.max(0, Math.min(100, 8 + qLiq + qCalm + qAge + qVol + qBuy));
+
+  var score = Math.round(momentum * 0.55 + quality * 0.45);
+
+  var danger =
+    (liq > 0 && ratio > 18) ||
+    (liq < 25000 && Math.abs(c1) > 12) ||
+    (liq < 50000 && Math.abs(c1) > 22) ||
+    (liq < 15000);
+
+  var extremeVol = Math.abs(c1) > 30 || Math.abs(c5) > 12;
+
+  var riskLevel = 'green';
+  var riskLabel = 'Lower risk';
+  if(danger || liq < 25000 || (extended && liq < 100000)){
+    riskLevel = 'red';
+    riskLabel = 'Higher risk';
+  } else if(extremeVol || extended || liq < 75000 || ratio > 10 || hours < 2 || Math.abs(c1) > 18){
+    riskLevel = 'yellow';
+    riskLabel = 'Medium risk';
+  }
+
+  var moveNow =
+    !danger && riskLevel !== 'red' &&
+    momentum >= 62 && quality >= 28 &&
+    c5 >= 1.2 && c6 >= 2 && c1 >= 4 &&
+    buys > sells && buyRatio >= 0.53 &&
+    liq >= 50000 && !extended;
+
+  var fast =
+    !danger && momentum >= 52 && quality >= 32 &&
+    c1 >= 3 && c6 >= 4 && c5 > -1 &&
+    buyRatio >= 0.50 && liq >= 75000 && !(c1 > 28);
+
+  var steady =
+    !danger && quality >= 52 && momentum < 58 &&
+    Math.abs(c5) < 2.5 && Math.abs(c1) < 10 &&
+    liq >= 150000 && hours >= 2;
+
+  var cooling = (momentum >= 45 && c5 >= 0 && c5 < 1.2 && c1 > 2 && !moveNow);
+  var fading = (c5 < -0.5 && c1 < 0) || (c1 < -4 && buyRatio < 0.45);
+
+  var temp = moveNow || fast ? 'HOT' : steady ? 'NEUTRAL' : cooling ? 'COOLING' : fading ? 'COLD' : 'WATCH';
+
+  var action = 'WATCH', ac = 'watch';
+  if(danger || (riskLevel === 'red' && (liq < 25000 || ratio > 18))){
+    action = 'HIGH RISK'; ac = 'risk';
+  } else if(moveNow || (fast && !extended)){
+    action = 'ENTRY'; ac = 'entry';
+  } else if(fast && extended){
+    action = 'HOLD'; ac = 'hold';
+  } else if(fading){
+    action = 'EXIT'; ac = 'exit';
+  } else if(cooling || steady){
+    action = 'WATCH'; ac = 'watch';
+  } else if(momentum >= 50){
+    action = 'HOLD'; ac = 'hold';
+  }
+
+  // Stronger sell-side flag for watchlist alerts
+  var sellAlert =
+    action === 'EXIT' ||
+    action === 'HIGH RISK' ||
+    riskLevel === 'red' ||
+    (c1 < -8 && buyRatio < 0.42) ||
+    (c6 < -15 && c1 < -3);
+
+  var reasons = [];
+  if(moveNow) reasons.push('Strong short-term momentum with buy pressure');
+  else if(fast && !extended) reasons.push('Confirmed momentum, not extremely extended');
+  else if(fast && extended) reasons.push('Momentum present but move looks extended');
+  else if(steady) reasons.push('Quieter action with stronger liquidity profile');
+  else if(cooling) reasons.push('Cooling after strength — wait for clarity');
+  else if(fading) reasons.push('Selling pressure / fading momentum');
+  else if(danger) reasons.push('Liquidity or volatility warning');
+  else reasons.push('Mixed signals — monitor');
+  if(extended) reasons.push('Extended move');
+  if(liq >= 250000) reasons.push('Deep liquidity');
+  else if(liq < 50000) reasons.push('Thin liquidity');
+  if(hours < 2) reasons.push('Very new pair');
+
+  return {
+    momentum: momentum, quality: quality, score: score,
+    temp: temp, action: action, ac: ac,
+    moveNow: moveNow, fast: fast, steady: steady,
+    cooling: cooling, fading: fading, danger: danger,
+    extremeVol: extremeVol, extended: extended,
+    riskLevel: riskLevel, riskLabel: riskLabel,
+    sellAlert: sellAlert,
+    reason: reasons.slice(0, 3).join(' • '),
+    c5: c5, c6: c6, c1: c1, c24: c24,
+    vol: vol, liq: liq, buys: buys, sells: sells,
+    ratio: ratio, pressure: pressure, buyRatio: buyRatio,
+    ageText: ageInfo.text, hours: hours, priceUsd: priceUsd
+  };
+}
+
+function esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+
+function getWatchMeta(p){
+  var id = pairId(p);
+  for(var i = 0; i < watchlist.length; i++){
+    if(watchlist[i].id === id) return watchlist[i];
+  }
+  return null;
+}
+
+function card(p, opts){
+  opts = opts || {};
+  var a = analyze(p);
+  var tempClass = a.temp === 'HOT' ? 'hot' : a.temp === 'COOLING' ? 'cool' : a.temp === 'COLD' ? 'cold' : 'neutral';
+  var link = 'https://dexscreener.com/' + encodeURIComponent(p.chainId || '') + '/' + encodeURIComponent(p.pairAddress || '');
+  var buyPct = Math.round(a.buyRatio * 100);
+  var base = p.baseToken || {};
+  var id = pairId(p);
+  var watched = isWatched(p);
+  var meta = getWatchMeta(p);
+  var alertClass = (opts.fromList && a.sellAlert) ? ' alert-border' : '';
+
+  var pnlHtml = '';
+  if(meta && meta.entryPrice && a.priceUsd > 0){
+    var chg = ((a.priceUsd - meta.entryPrice) / meta.entryPrice) * 100;
+    pnlHtml = '<div class="pnl ' + (chg >= 0 ? 'up' : 'down') + '">vs entry: ' + pct(chg) + ' (entry $' + meta.entryPrice + ')</div>';
+  }
+
+  var entryRow = '';
+  if(opts.fromList && meta){
+    entryRow =
+      '<div class="entry-row">' +
+        '<input type="number" step="any" placeholder="Entry price (USD)" data-entry="' + esc(id) + '" value="' + (meta.entryPrice != null ? meta.entryPrice : '') + '">' +
+        '<input type="text" placeholder="Notes" data-notes="' + esc(id) + '" value="' + esc(meta.notes || '') + '">' +
+        '<button type="button" class="note-btn" data-save="' + esc(id) + '">Save</button>' +
+      '</div>' + pnlHtml;
+  }
+
+  var watchBtn = watched
+    ? '<button type="button" class="rem" data-remove="' + esc(id) + '">Remove</button>'
+    : '<button type="button" class="add" data-add="' + esc(id) + '">+ MY LIST</button>';
+
+  return '<div class="card' + alertClass + '" data-pid="' + esc(id) + '">' +
+    '<div class="top">' +
+      '<div>' +
+        '<div class="name">' + esc(base.name || meta && meta.name || 'Unknown') + ' (' + esc(base.symbol || meta && meta.symbol || '?') + ')</div>' +
+        '<div class="pair">' + esc(p.chainId || '?') + ' • ' + esc(p.dexId || 'DEX') + ' • ' + esc(String(p.pairAddress || '').slice(0,8)) + '… • ' + a.ageText + '</div>' +
+      '</div>' +
+      '<span class="badge ' + tempClass + '">' + a.temp + '</span>' +
+    '</div>' +
+    '<div class="signal">' +
+      '<span class="badge ' + a.ac + '">' + a.action + '</span>' +
+      '<span class="risk-pill ' + a.riskLevel + '"><span class="risk-dot risk-' + a.riskLevel + '"></span>' + a.riskLabel + '</span>' +
+      (a.moveNow ? '<span class="badge entry">⚡ MOVE NOW</span>' : '') +
+      (a.sellAlert ? '<span class="badge exit">SELL ALERT</span>' : '') +
+      (a.extended && !a.danger ? '<span class="badge risk">EXTENDED</span>' : '') +
+      (a.danger ? '<span class="badge risk">⚠️ DANGER</span>' : '') +
+    '</div>' +
+    '<div class="grid">' +
+      '<div class="metric"><b class="' + (a.c5 >= 0 ? 'pos' : 'neg') + '">' + pct(a.c5) + '</b><span>5 min</span></div>' +
+      '<div class="metric"><b class="' + (a.c6 >= 0 ? 'pos' : 'neg') + '">' + pct(a.c6) + '</b><span>6 hour</span></div>' +
+      '<div class="metric"><b class="' + (a.c1 >= 0 ? 'pos' : 'neg') + '">' + pct(a.c1) + '</b><span>1 hour</span></div>' +
+      '<div class="metric"><b class="' + (a.c24 >= 0 ? 'pos' : 'neg') + '">' + pct(a.c24) + '</b><span>24 hour</span></div>' +
+      '<div class="metric"><b>' + money(a.vol) + '</b><span>24h volume</span></div>' +
+      '<div class="metric"><b>' + money(a.liq) + '</b><span>liquidity</span></div>' +
+      '<div class="metric"><b>' + a.buys + '</b><span>1h buys</span></div>' +
+      '<div class="metric"><b>' + a.sells + '</b><span>1h sells</span></div>' +
+    '</div>' +
+    '<div class="scores">' +
+      '<div class="score-box"><div class="label">Momentum</div><div class="row"><b>' + Math.round(a.momentum) + '</b><div class="bar"><div class="fill-m" style="width:' + a.momentum + '%"></div></div></div></div>' +
+      '<div class="score-box"><div class="label">Quality</div><div class="row"><b>' + Math.round(a.quality) + '</b><div class="bar"><div class="fill-q" style="width:' + a.quality + '%"></div></div></div></div>' +
+    '</div>' +
+    '<div class="details">Buy share: ' + buyPct + '% • Vol/Liq: ' + a.ratio.toFixed(1) + '× • Combined ' + a.score +
+      (a.priceUsd ? ' • Price $' + (a.priceUsd < 0.01 ? a.priceUsd.toPrecision(4) : a.priceUsd.toFixed(4)) : '') +
+    '</div>' +
+    '<div class="reason">' + esc(a.reason) + '</div>' +
+    entryRow +
+    '<div class="actions">' +
+      '<a href="' + link + '" target="_blank" rel="noopener">DEX Screener</a>' +
+      watchBtn +
+    '</div>' +
+  '</div>';
+}
+
+function populateChains(){
+  var sel = $('chainFilter');
+  if(!sel) return;
+  var current = sel.value;
+  var chains = [], seen = {};
+  rows.forEach(function(p){
+    if(p.chainId && !seen[p.chainId]){ seen[p.chainId] = true; chains.push(p.chainId); }
+  });
+  chains.sort();
+  var html = '<option value="all">All chains</option>';
+  chains.forEach(function(c){ html += '<option value="' + esc(c) + '">' + esc(c) + '</option>'; });
+  sel.innerHTML = html;
+  if(seen[current]) sel.value = current;
+}
+
+function filteredRows(){
+  var chain = ($('chainFilter') && $('chainFilter').value) || 'all';
+  var minLiq = n($('liqFilter') && $('liqFilter').value);
+  var r = [];
+
+  if(mode === 'mylist'){
+    watchlist.forEach(function(w){
+      var p = rows.find(function(x){ return pairId(x) === w.id; });
+      if(p){
+        var a = analyze(p);
+        r.push({p: p, a: a});
+      }
+    });
+  } else {
+    for(var i = 0; i < rows.length; i++){
+      var p = rows[i];
+      var a = analyze(p);
+      if((chain === 'all' || p.chainId === chain) && a.liq >= minLiq){
+        r.push({p: p, a: a});
+      }
+    }
+    if(mode === 'move') r = r.filter(function(x){ return x.a.moveNow; });
+    else if(mode === 'fast') r = r.filter(function(x){ return x.a.fast || x.a.moveNow; });
+    else if(mode === 'steady') r = r.filter(function(x){ return x.a.steady; });
+    else if(mode === 'watch') r = r.filter(function(x){ return x.a.temp === 'WATCH' || x.a.temp === 'COOLING' || x.a.action === 'WATCH'; });
+  }
+
+  var sort = ($('sortFilter') && $('sortFilter').value) || 'score';
+  r.sort(function(a, b){
+    var va, vb;
+    if(sort === 'momentum'){ va = a.a.momentum; vb = b.a.momentum; }
+    else if(sort === 'quality'){ va = a.a.quality; vb = b.a.quality; }
+    else if(sort === 'm5'){ va = a.a.c5; vb = b.a.c5; }
+    else if(sort === 'h6'){ va = a.a.c6; vb = b.a.c6; }
+    else if(sort === 'h1'){ va = a.a.c1; vb = b.a.c1; }
+    else if(sort === 'vol'){ va = a.a.vol; vb = b.a.vol; }
+    else if(sort === 'liq'){ va = a.a.liq; vb = b.a.liq; }
+    else { va = a.a.score; vb = b.a.score; }
+    return vb - va;
+  });
+  return r;
+}
+
+function updateAlertBox(listRows){
+  var box = $('alertBox');
+  if(!box) return;
+  var alerts = [];
+  listRows.forEach(function(x){
+    if(x.a.sellAlert){
+      var sym = (x.p.baseToken && x.p.baseToken.symbol) || '?';
+      alerts.push(sym + ' — ' + x.a.action + ' / ' + x.a.riskLabel + ': ' + x.a.reason);
+    }
+  });
+  if(mode === 'mylist' && alerts.length){
+    box.style.display = 'block';
+    box.innerHTML = '<b>Sell-side alerts on MY LIST</b>' + alerts.map(function(t){ return '<div>' + esc(t) + '</div>'; }).join('');
+  } else {
+    box.style.display = 'none';
+    box.innerHTML = '';
+  }
+}
+
+function render(){
+  try{
+    var el = $('results');
+    if(!el) return;
+    var r = filteredRows();
+    updateAlertBox(r);
+
+    if(mode === 'mylist'){
+      var banner = '<div class="watch-banner"><b>MY LIST</b> — ' + watchlist.length + ' saved pair(s). Stored in this browser only. ' +
+        'Add entry price to see rough % vs entry. Red border = sell-side alert.</div>';
+      if(watchlist.length === 0){
+        el.innerHTML = banner + '<div class="empty">No saved pairs yet. Scan coins and tap <b>+ MY LIST</b> on a card.</div>';
+        return;
+      }
+      if(r.length === 0){
+        el.innerHTML = banner + '<div class="empty">Saved pairs are loading or unavailable. Tap ↻ to refresh.</div>';
+        return;
+      }
+      var html = banner;
+      r.forEach(function(x){ html += card(x.p, { fromList: true }); });
+      el.innerHTML = html;
+      return;
+    }
+
+    if(r.length === 0){
+      el.innerHTML = '<div class="empty">No matches for this filter. Try <b>ALL</b>, lower liquidity, or search another coin.<br><span style="opacity:.8">MOVE NOW / FAST need active momentum — empty is normal when quiet.</span></div>';
+    } else {
+      var html2 = '';
+      var limit = Math.min(40, r.length);
+      for(var i = 0; i < limit; i++) html2 += card(r[i].p);
+      el.innerHTML = html2;
+    }
+  }catch(e){
+    console.error('render error', e);
+    var el2 = $('results');
+    if(el2) el2.innerHTML = '<div class="empty">Display error. Check console.</div>';
+  }
+}
+
+function fetchPairs(q){
+  return fetch('https://api.dexscreener.com/latest/dex/search?q=' + encodeURIComponent(q), {
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json' }
+  }).then(function(res){
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }).then(function(data){ return data.pairs || []; });
+}
+
+function fetchPairByAddress(chainId, pairAddress){
+  return fetch('https://api.dexscreener.com/latest/dex/pairs/' + encodeURIComponent(chainId) + '/' + encodeURIComponent(pairAddress), {
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json' }
+  }).then(function(res){
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }).then(function(data){
+    var pairs = data.pairs || (data.pair ? [data.pair] : []);
+    return pairs[0] || null;
+  }).catch(function(){ return null; });
+}
+
+function ingestPairs(list){
+  var map = {};
+  list.forEach(function(p){
+    if(!p || !p.baseToken || !p.liquidity || !p.pairAddress) return;
+    var key = pairId(p);
+    var old = map[key];
+    if(!old || n(p.liquidity && p.liquidity.usd) > n(old.liquidity && old.liquidity.usd)) map[key] = p;
+  });
+  // merge existing rows so watchlist pairs aren't dropped
+  rows.forEach(function(p){
+    var key = pairId(p);
+    if(!map[key]) map[key] = p;
+  });
+  var arr = [];
+  for(var k in map) if(map.hasOwnProperty(k)) arr.push(map[k]);
+  arr.sort(function(a, b){
+    return n(b.liquidity && b.liquidity.usd) - n(a.liquidity && a.liquidity.usd);
+  });
+  return arr.slice(0, 150);
+}
+
+function setStatus(msg){
+  var s = $('status');
+  if(s) s.textContent = msg;
+}
+
+function searchCoins(){
+  var qEl = $('q');
+  var q = qEl ? qEl.value.trim() : '';
+  if(!q){ loadPopular(); return; }
+  if(loading) return;
+  loading = true;
+  lastQuery = q;
+  setStatus('Scanning live market pairs…');
+  fetchPairs(q).then(function(pairs){
+    rows = ingestPairs(pairs);
+    populateChains();
+    setStatus('Found ' + rows.length + ' market pair(s) for "' + q + '".');
+    render();
+  }).catch(function(e){
+    console.error(e);
+    setStatus('Live data could not be loaded. (' + (e.message || e) + ')');
+  }).then(function(){ loading = false; });
+}
+
+function loadPopular(){
+  if(loading) return;
+  loading = true;
+  lastQuery = '__popular__';
+  setStatus('Loading live market pairs…');
+  var queries = ['SOL', 'ETH', 'PEPE', 'WIF'];
+  Promise.all(queries.map(function(q){
+    return fetchPairs(q).catch(function(){ return []; });
+  })).then(function(results){
+    var all = [];
+    results.forEach(function(list){ all = all.concat(list); });
+    rows = ingestPairs(all);
+    populateChains();
+    setStatus(rows.length ? ('Auto-loaded ' + rows.length + ' live market pair(s).') : 'No pairs loaded. Try searching.');
+    render();
+  }).catch(function(e){
+    console.error(e);
+    setStatus('Live data could not be loaded.');
+  }).then(function(){ loading = false; });
+}
+
+function refreshWatchlistPairs(){
+  if(!watchlist.length){ render(); return; }
+  setStatus('Refreshing MY LIST…');
+  var jobs = watchlist.map(function(w){
+    return fetchPairByAddress(w.chainId, w.pairAddress).then(function(p){
+      if(p){
+        // upsert into rows
+        var id = pairId(p);
+        var idx = rows.findIndex(function(r){ return pairId(r) === id; });
+        if(idx >= 0) rows[idx] = p; else rows.unshift(p);
+      }
+    });
+  });
+  Promise.all(jobs).then(function(){
+    setStatus('MY LIST updated (' + watchlist.length + ' pair(s)).');
+    render();
+    checkWatchlistAlerts();
+  }).catch(function(){
+    setStatus('Some MY LIST pairs could not refresh.');
+    render();
+  });
+}
+
+function getAlertedMap(){
+  try{ return JSON.parse(localStorage.getItem(ALERT_KEY) || '{}'); }catch(e){ return {}; }
+}
+function setAlertedMap(m){
+  try{ localStorage.setItem(ALERT_KEY, JSON.stringify(m)); }catch(e){}
+}
+
+function checkWatchlistAlerts(){
+  var alerted = getAlertedMap();
+  var now = Date.now();
+  // clear old alert markers after 2 hours
+  Object.keys(alerted).forEach(function(k){
+    if(now - alerted[k] > 2 * 3600 * 1000) delete alerted[k];
+  });
+
+  watchlist.forEach(function(w){
+    var p = rows.find(function(r){ return pairId(r) === w.id; });
+    if(!p) return;
+    var a = analyze(p);
+    if(!a.sellAlert) return;
+    var key = w.id + ':' + a.action + ':' + a.riskLevel;
+    if(alerted[key]) return;
+    alerted[key] = now;
+    var title = 'Radar alert: ' + (w.symbol || '?');
+    var body = a.action + ' • ' + a.riskLabel + ' — ' + a.reason;
+    showNotification(title, body);
+  });
+  setAlertedMap(alerted);
+}
+
+function showNotification(title, body){
+  if(!notifyEnabled || !('Notification' in window)) return;
+  if(Notification.permission === 'granted'){
+    try{ new Notification(title, { body: body, tag: 'cmr-v3' }); }catch(e){}
+  }
+}
+
+function enableNotifications(){
+  if(!('Notification' in window)){
+    setStatus('Notifications not supported in this browser.');
+    return;
+  }
+  Notification.requestPermission().then(function(perm){
+    notifyEnabled = perm === 'granted';
+    setStatus(notifyEnabled
+      ? 'Browser alerts enabled (while this page is open).'
+      : 'Notification permission denied.');
+    var btn = $('btnNotify');
+    if(btn) btn.textContent = notifyEnabled ? '🔔 On' : '🔔 Alerts';
+  });
+}
+
+function refreshData(){
+  if(mode === 'mylist') refreshWatchlistPairs();
+  else if(lastQuery === '__popular__' || !lastQuery) loadPopular();
+  else searchCoins();
+}
+
+function onResultsClick(e){
+  var t = e.target;
+  var add = t.getAttribute && t.getAttribute('data-add');
+  var rem = t.getAttribute && t.getAttribute('data-remove');
+  var save = t.getAttribute && t.getAttribute('data-save');
+
+  if(add){
+    var p = rows.find(function(r){ return pairId(r) === add; });
+    if(p) addToWatchlist(p);
+    return;
+  }
+  if(rem){
+    removeFromWatchlist(rem);
+    return;
+  }
+  if(save){
+    var entryEl = document.querySelector('input[data-entry="' + save.replace(/"/g, '\\"') + '"]');
+    var notesEl = document.querySelector('input[data-notes="' + save.replace(/"/g, '\\"') + '"]');
+    // safer query
+    var cardEl = t.closest('.card');
+    if(cardEl){
+      entryEl = cardEl.querySelector('input[data-entry]');
+      notesEl = cardEl.querySelector('input[data-notes]');
+    }
+    updateWatchMeta(save, {
+      entryPrice: entryEl ? entryEl.value : null,
+      notes: notesEl ? notesEl.value : ''
+    });
+    setStatus('Saved entry/notes for watchlist item.');
+    render();
+  }
+}
+
+function init(){
+  loadWatchlist();
+  if('Notification' in window && Notification.permission === 'granted'){
+    notifyEnabled = true;
+    var b = $('btnNotify');
+    if(b) b.textContent = '🔔 On';
+  }
+
+  var tabs = document.getElementById('tabs');
+  if(tabs){
+    tabs.addEventListener('click', function(e){
+      var btn = e.target.closest('.tab');
+      if(!btn) return;
+      var m = btn.getAttribute('data-mode');
+      if(m) setMode(m, btn);
+    });
+  }
+
+  var scan = $('btnScan');
+  if(scan) scan.addEventListener('click', searchCoins);
+  var ref = $('btnRefresh');
+  if(ref) ref.addEventListener('click', refreshData);
+  var q = $('q');
+  if(q) q.addEventListener('keydown', function(e){ if(e.key === 'Enter') searchCoins(); });
+  var chain = $('chainFilter');
+  if(chain) chain.addEventListener('change', render);
+  var liq = $('liqFilter');
+  if(liq) liq.addEventListener('change', render);
+  var sort = $('sortFilter');
+  if(sort) sort.addEventListener('change', render);
+  var btnN = $('btnNotify');
+  if(btnN) btnN.addEventListener('click', enableNotifications);
+
+  var results = $('results');
+  if(results) results.addEventListener('click', onResultsClick);
+
+  loadPopular();
+  // refresh scan + watchlist alerts
+  setInterval(function(){
+    if(mode === 'mylist') refreshWatchlistPairs();
+    else if(lastQuery) refreshData();
+  }, 60000);
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>

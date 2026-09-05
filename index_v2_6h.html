@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Crypto Motion Radar V2</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b1020,#111827);min-height:100vh}
+header{padding:16px 14px 10px;position:sticky;top:0;background:rgba(11,16,32,.97);backdrop-filter:blur(12px);z-index:5;border-bottom:1px solid #1d2940}
+h1{font-size:23px;margin:0 0 3px}.sub{font-size:12px;color:#aab3c5}
+.controls{display:flex;gap:7px;margin-top:11px}
+.controls input{flex:1;min-width:0}
+input,button,select{border:1px solid #334155;background:#172033;color:#fff;border-radius:11px;padding:10px;font-size:13px}
+button{font-weight:800;cursor:pointer}.primary{background:#2563eb!important;border-color:#2563eb!important}
+.tabs{display:flex;gap:7px;overflow:auto;margin:9px 0 7px}
+.tab{white-space:nowrap}.tab.active{background:#334155}
+.filters{display:flex;gap:7px;overflow:auto;padding-bottom:2px}
+.filters select{white-space:nowrap}
+main{padding:9px 13px 85px}
+.note{font-size:11px;color:#aab3c5;background:#131c2e;padding:9px 11px;border-radius:11px;margin-bottom:10px}
+.status{font-size:11px;color:#9ca3af;margin:8px 2px}
+.card{background:#141d2e;border:1px solid #263248;border-radius:15px;padding:12px;margin:8px 0}
+.top{display:flex;justify-content:space-between;gap:9px}.name{font-weight:850}.pair{font-size:10px;color:#8f9bb0;margin-top:2px}
+.badge{padding:4px 7px;border-radius:8px;font-size:10px;font-weight:850;white-space:nowrap}
+.hot{background:#12351f;color:#6ee7b7}.cool{background:#3b3210;color:#fde68a}.cold{background:#3b171d;color:#fca5a5}.neutral{background:#263248;color:#cbd5e1}
+.buy{background:#0b3b2b;color:#86efac}.hold{background:#25324a;color:#cbd5e1}.watch{background:#403610;color:#fde68a}.sell{background:#461a20;color:#fda4af}
+.risk{background:#4a2512;color:#fdba74}.info{background:#172c48;color:#93c5fd}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.metric{background:#0e1626;padding:7px;border-radius:9px;min-width:0}.metric b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.metric span{font-size:9px;color:#8490a5}
+.pos{color:#6ee7b7}.neg{color:#fca5a5}.muted{color:#9ca3af}
+.score{display:flex;align-items:center;gap:8px;margin-top:9px}.bar{height:7px;background:#263248;border-radius:99px;flex:1;overflow:hidden}.fill{height:100%;background:#60a5fa}
+.signal{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.details{font-size:10px;color:#8995aa;margin-top:7px;line-height:1.4}
+.actions{display:flex;gap:7px;margin-top:9px}.actions a{flex:1;text-align:center;text-decoration:none;color:#fff;background:#1e293b;border-radius:9px;padding:8px;font-size:11px;font-weight:750}
+.empty{padding:22px 8px;text-align:center;color:#8f9bb0;font-size:12px}
+.legend{font-size:10px;color:#77849a;margin-top:7px}
+footer{position:fixed;bottom:0;left:0;right:0;padding:9px 12px;background:rgba(11,16,32,.97);font-size:10px;color:#7f8ba0;text-align:center;border-top:1px solid #1d2940}
+@media(max-width:430px){.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Crypto Motion Radar <span style="font-size:12px;color:#60a5fa">V2</span></h1>
+  <div class="sub">Fast-game momentum + steady-game opportunities + risk filtering</div>
+
+  <div class="controls">
+    <input id="q" placeholder="Search coin or token (e.g. SOL)">
+    <button class="primary" onclick="searchCoins()">Scan</button>
+    <button onclick="refreshData()">↻</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setMode('move',this)">⚡ MOVE NOW</button>
+    <button class="tab" onclick="setMode('fast',this)">🔥 FAST</button>
+    <button class="tab" onclick="setMode('steady',this)">🐢 STEADY</button>
+    <button class="tab" onclick="setMode('watch',this)">👀 WATCH</button>
+    <button class="tab" onclick="setMode('all',this)">ALL</button>
+  </div>
+
+  <div class="filters">
+    <select id="chainFilter" onchange="render()">
+      <option value="all">All chains</option>
+    </select>
+    <select id="liqFilter" onchange="render()">
+      <option value="0">Any liquidity</option>
+      <option value="25000">$25K+ liquidity</option>
+      <option value="50000">$50K+ liquidity</option>
+      <option value="100000">$100K+ liquidity</option>
+      <option value="250000">$250K+ liquidity</option>
+    </select>
+    <select id="sortFilter" onchange="render()">
+      <option value="score">Sort: Radar score</option>
+      <option value="m5">Sort: 5 min</option>
+      <option value="h6">Sort: 6 hour</option>
+      <option value="h1">Sort: 1 hour</option>
+      <option value="vol">Sort: volume</option>
+      <option value="liq">Sort: liquidity</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <div class="note">
+    V2 scans public DEX market data. It does not connect to a wallet or place trades.
+    The radar is designed to find momentum and risk characteristics, not predict price.
+  </div>
+  <div id="status" class="status">Search for a coin to begin.</div>
+  <div id="results"></div>
+  <div class="legend">BUY = unusually strong short-term setup under the current rules • HOLD = momentum present • WATCH = developing/cooling • HIGH RISK = liquidity/volatility warning</div>
+</main>
+
+<footer>Crypto Motion Radar V2 • educational market scanner</footer>
+
+<script>
+let mode='move', rows=[], lastQuery='';
+
+const $=id=>document.getElementById(id);
+function setMode(m,el){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+function n(x){return typeof x==='number'?x:parseFloat(x||0)}
+function money(x){
+  x=n(x);
+  if(!x)return '$0';
+  if(x>=1e9)return '$'+(x/1e9).toFixed(2)+'B';
+  if(x>=1e6)return '$'+(x/1e6).toFixed(2)+'M';
+  if(x>=1e3)return '$'+(x/1e3).toFixed(1)+'K';
+  return '$'+x.toFixed(0);
+}
+function pct(x){x=n(x);return (x>=0?'+':'')+x.toFixed(2)+'%'}
+function age(pair){
+  const t=n(pair.pairCreatedAt);
+  if(!t)return 'Age n/a';
+  const mins=Math.max(0,(Date.now()-t)/60000);
+  if(mins<60)return Math.floor(mins)+'m old';
+  if(mins<1440)return Math.floor(mins/60)+'h old';
+  return Math.floor(mins/1440)+'d old';
+}
+
+function analyze(p){
+  const c5=n(p.priceChange?.m5), c6=n(p.priceChange?.h6);
+  const c1=n(p.priceChange?.h1), c24=n(p.priceChange?.h24);
+  const vol=n(p.volume?.h24), liq=n(p.liquidity?.usd);
+  const buys=n(p.txns?.h1?.buys), sells=n(p.txns?.h1?.sells);
+  const tx=buys+sells;
+  const pressure=tx?(buys-sells)/tx:0;
+  const buyRatio=tx?buys/tx:0;
+  const ratio=liq?vol/liq:0;
+
+  // V2 weights the very short-term move more heavily, while requiring
+  // confirmation from 6h/1h activity and actual liquidity.
+  const acceleration=Math.max(0,c5)*6+Math.max(0,c6)*0.35+Math.max(0,c1)*0.65;
+  const activity=Math.min(20,ratio*7);
+  const pressureBoost=Math.min(18,Math.max(0,pressure)*32);
+  const liquidityBonus=liq>=250000?8:liq>=100000?5:liq>=50000?2:0;
+  const score=Math.max(0,Math.min(100,18+acceleration+activity+pressureBoost+liquidityBonus));
+
+  const danger =
+    (liq>0 && ratio>18) ||
+    (liq<25000 && Math.abs(c1)>15) ||
+    (liq<50000 && Math.abs(c1)>25);
+
+  const extremeVol=Math.abs(c1)>30 || Math.abs(c5)>12;
+  const hot=score>=50 && c5>=0.8 && c6>=4 && c1>=3;
+  const moveNow=
+    !danger &&
+    score>=62 &&
+    c5>=1.5 &&
+    c15>=3 &&
+    c1>=6 &&
+    buys>sells &&
+    buyRatio>=0.52 &&
+    liq>=25000;
+
+  const steady=
+    !danger &&
+    score<58 &&
+    Math.abs(c5)<2 &&
+    Math.abs(c1)<8 &&
+    liq>=100000;
+
+  const cooling=hot && c5>=0 && c5<1.5 && c1>2;
+  const cold=c5<0 && c1<0;
+
+  let temp=hot?'HOT':steady?'NEUTRAL':cooling?'COOLING':cold?'COLD':'WATCH';
+  if(cold && c5<-3)temp='COLD';
+
+  let action='NO SIGNAL', ac='neutral';
+  if(danger){action='HIGH RISK';ac='risk'}
+  else if(moveNow){action='BUY';ac='buy'}
+  else if(hot){action='HOLD';ac='hold'}
+  else if(cooling){action='WATCH';ac='watch'}
+  else if(cold){action='SELL';ac='sell'}
+  else if(steady){action='WATCH';ac='watch'}
+
+  return {
+    score,temp,action,ac,moveNow,danger,steady,cooling,cold,extremeVol,
+    c5,c6,c1,c24,vol,liq,buys,sells,ratio,pressure,buyRatio
+  };
+}
+
+function card(p){
+  const a=analyze(p);
+  const tempClass=a.temp==='HOT'?'hot':a.temp==='COOLING'?'cool':a.temp==='COLD'?'cold':'neutral';
+  const link=`https://dexscreener.com/${encodeURIComponent(p.chainId||'')}/${encodeURIComponent(p.pairAddress||'')}`;
+  const fomo='https://fomo.family/';
+  const buyPct=Math.round(a.buyRatio*100);
+
+  return `<div class="card">
+    <div class="top">
+      <div>
+        <div class="name">${esc(p.baseToken?.name||'Unknown')} (${esc(p.baseToken?.symbol||'?')})</div>
+        <div class="pair">${esc(p.chainId||'?')} • ${esc(p.dexId||'DEX')} • ${esc((p.pairAddress||'').slice(0,8))}… • ${age(p)}</div>
+      </div>
+      <span class="badge ${tempClass}">${a.temp}</span>
+    </div>
+
+    <div class="signal">
+      <span class="badge ${a.ac}">${a.action}</span>
+      ${a.moveNow?'<span class="badge buy">⚡ MOVE NOW</span>':''}
+      ${a.danger?'<span class="badge risk">⚠️ EXTREME RISK</span>':''}
+      ${a.extremeVol&&!a.danger?'<span class="badge risk">HIGH VOLATILITY</span>':''}
+    </div>
+
+    <div class="grid">
+      <div class="metric"><b class="${a.c5>=0?'pos':'neg'}">${pct(a.c5)}</b><span>5 min</span></div>
+      <div class="metric"><b class="${a.c6>=0?'pos':'neg'}">${pct(a.c6)}</b><span>15 min</span></div>
+      <div class="metric"><b class="${a.c1>=0?'pos':'neg'}">${pct(a.c1)}</b><span>1 hour</span></div>
+      <div class="metric"><b class="${a.c24>=0?'pos':'neg'}">${pct(a.c24)}</b><span>24 hour</span></div>
+      <div class="metric"><b>${money(a.vol)}</b><span>24h volume</span></div>
+      <div class="metric"><b>${money(a.liq)}</b><span>liquidity</span></div>
+      <div class="metric"><b>${a.buys}</b><span>1h buys</span></div>
+      <div class="metric"><b>${a.sells}</b><span>1h sells</span></div>
+    </div>
+
+    <div class="score">
+      <b>Radar ${Math.round(a.score)}</b>
+      <div class="bar"><div class="fill" style="width:${a.score}%"></div></div>
+    </div>
+
+    <div class="details">
+      Buy share: ${buyPct}% • Volume/Liquidity: ${a.ratio.toFixed(1)}×
+      ${a.danger?' • Liquidity/volatility warning':''}
+    </div>
+
+    <div class="actions">
+      <a href="${link}" target="_blank" rel="noopener">DEX Screener</a>
+      <a href="${fomo}" target="_blank" rel="noopener">FOMO</a>
+    </div>
+  </div>`;
+}
+
+function esc(v){
+  return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function populateChains(){
+  const sel=$('chainFilter'), current=sel.value;
+  const chains=[...new Set(rows.map(p=>p.chainId).filter(Boolean))].sort();
+  sel.innerHTML='<option value="all">All chains</option>'+chains.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if(chains.includes(current))sel.value=current;
+}
+
+function filteredRows(){
+  const chain=$('chainFilter').value;
+  const minLiq=n($('liqFilter').value);
+  let r=rows.map(p=>({p,a:analyze(p)}))
+    .filter(x=>(chain==='all'||x.p.chainId===chain)&&x.a.liq>=minLiq);
+
+  if(mode==='move')r=r.filter(x=>x.a.moveNow);
+  else if(mode==='fast')r=r.filter(x=>x.a.temp==='HOT'||x.a.moveNow);
+  else if(mode==='steady')r=r.filter(x=>x.a.steady);
+  else if(mode==='watch')r=r.filter(x=>x.a.temp==='WATCH'||x.a.temp==='COOLING');
+
+  const sort=$('sortFilter').value;
+  const val=x=>sort==='m5'?x.a.c5:sort==='m15'?x.a.c6:sort==='h1'?x.a.c1:sort==='vol'?x.a.vol:sort==='liq'?x.a.liq:x.a.score;
+  r.sort((a,b)=>val(b)-val(a));
+  return r;
+}
+
+function render(){
+  const r=filteredRows();
+  $('results').innerHTML=r.slice(0,40).map(x=>card(x.p)).join('') ||
+    '<div class="empty">No matches for this filter. Try ALL, lower the liquidity filter, or scan another coin.</div>';
+}
+
+async function searchCoins(){
+  const q=$('q').value.trim();
+  if(!q){
+    $('status').textContent='Type a coin name or symbol.';
+    return;
+  }
+  lastQuery=q;
+  $('status').textContent='Scanning live market pairs…';
+  try{
+    const res=await fetch('https://api.dexscreener.com/latest/dex/search?q='+encodeURIComponent(q),{cache:'no-store'});
+    if(!res.ok)throw new Error(res.status);
+    const data=await res.json();
+
+    // Keep valid pairs, remove exact duplicate pair addresses, and keep
+    // the strongest-liquidity version when a token appears in several pools.
+    const map=new Map();
+    (data.pairs||[]).forEach(p=>{
+      if(!p.baseToken || !p.liquidity || !p.pairAddress)return;
+      const key=(p.chainId||'')+':'+p.pairAddress;
+      const old=map.get(key);
+      if(!old || n(p.liquidity?.usd)>n(old.liquidity?.usd))map.set(key,p);
+    });
+
+    rows=[...map.values()]
+      .sort((a,b)=>n(b.liquidity?.usd)-n(a.liquidity?.usd))
+      .slice(0,100);
+
+    populateChains();
+    $('status').textContent=`Found ${rows.length} market pair(s) for "${q}".`;
+    render();
+  }catch(e){
+    $('status').textContent='Live data could not be loaded. Check your connection and try again.';
+    console.error(e);
+  }
+}
+
+async function refreshData(){
+  if(!lastQuery){
+    $('status').textContent='Search for a coin first.';
+    return;
+  }
+  await searchCoins();
+}
+
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')searchCoins()});
+
+// Refresh the current scan every 60 seconds so the short-term numbers stay useful.
+setInterval(()=>{if(lastQuery)searchCoins()},60000);
+</script>
+</body>
+</html>
